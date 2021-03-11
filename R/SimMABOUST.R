@@ -7,6 +7,7 @@
 #' @param DeltaVEC Vector of \eqn{\bf{\Delta}} values to test.
 #' @param gamma Length 3 vector of cutoff parameters.
 #' @param PSPIKE Prior probability of a pairwise null effect.
+#' @param ADJ Binary indicator of whether covariate adjustment is used.
 #' @param B Number of MCMC iterations to perform.
 #' @param nSims Number of trial replications to complete.
 #' @param NLOOK Vector containing how many patients should be evaluated before each interim decision.
@@ -49,7 +50,8 @@
 #'  PROBS[[3]]=c(.14, .20, .48, .03, .12, .03)
 #'  Beta=c(-.13, -.07, -.10)
 #'  nSims=1 ##Number of sims to run
-#'  SimMABOUST(nSims,NLOOK, nTreat,nCat, UT, DeltaVEC,gamma,PSPIKE, B, PROBS, Beta, XPROB)
+#'  ADJ=1
+#'  SimMABOUST(nSims,NLOOK, nTreat,nCat, UT, DeltaVEC,gamma,PSPIKE,ADJ, B, PROBS, Beta, XPROB)
 #' @export
 SimMABOUST=function(nSims,
                     NLOOK, ##Sample sizes required for interim looks
@@ -59,6 +61,7 @@ SimMABOUST=function(nSims,
                     DeltaVEC, ##Vector of \Delta values to test.
                     gamma, ##Vector of cutoff parameters.
                     PSPIKE, ###Prior probability of a pairwise null effect.
+                    ADJ,
                     B, ##Number of MCMC iterations to perform.
                     PROBS, ###List of outcome probabilities.
                     Beta, ##Vector of covariate X relationship on outcome.
@@ -136,7 +139,7 @@ SimMABOUST=function(nSims,
     ###########
     ####Hyperparameters
     B=2000 ##Number of iterations in MCMC
-    RESULTS=MCMC_MABOUST(Y-1, T1-1,   X,   B, nTreat,nCat,PSPIKE)
+    RESULTS=MCMC_MABOUST(Y-1, T1-1,   X,   B, nTreat,nCat,PSPIKE,ADJ)
 
 
 
@@ -243,7 +246,7 @@ SimMABOUST=function(nSims,
         RESULTS=MCMC_MABOUST(Y-1,   ####Outcome vector (minus 1 for c++, i.e. 0,...,J-1)
                              T1-1,  ##Treatment indicator vector
                              X, ##Covariate MAtrix
-                             B,nTreat,nCat,PSPIKE) ##Number of iterations for the MCMC
+                             B,nTreat,nCat,PSPIKE,ADJ) ##Number of iterations for the MCMC
 
 
 

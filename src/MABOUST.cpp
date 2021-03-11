@@ -60,34 +60,9 @@ int Sample2(arma::vec groupprob){
 
 }
 
-arma::mat MATMULT(arma::mat X, arma::mat Y){
-
-  arma::mat PROD(X.n_rows,Y.n_cols);
-
-  int k;
-  int j;
-  int m=0;
-
-  for(j = 0 ;j<X.n_rows;j++){
-    for(k=0;k<PROD.n_cols;k++){
-      PROD(j,k)=0;
-      for(m=0;m<X.n_cols;m++){
-        PROD(j,k)=PROD(j,k)+X(j,m)*Y(m,k);
-      }
 
 
-
-    }
-  }
-
-
-  return(PROD);
-
-
-}
-
-
-
+//[[Rcpp::export]]
 int IsAdmissable(arma::mat gamma1,arma::mat gamma2){
   int ADM=1;
   arma::vec z9(2);
@@ -123,6 +98,7 @@ int Sample1(int G){
 }
 
 
+//[[Rcpp::export]]
 int SampleSpike(arma::vec SPIKEHOLD,int k){
 
   //How many are unclustered right now?
@@ -217,6 +193,7 @@ double max1(double a, double b){
 
 
 
+//[[Rcpp::export]]
 arma::vec GetBoundariesALPHA(int m,  arma::vec beta){
 
   arma::vec HOLD(2);
@@ -251,6 +228,7 @@ arma::vec GetBoundariesALPHA(int m,  arma::vec beta){
 
 }
 
+//[[Rcpp::export]]
 double TruncNormALPHA(int m,  arma::vec beta, double c1){
   //Truncation boundaries
   arma::vec BOUNDARIES = GetBoundariesALPHA(m,beta);
@@ -271,6 +249,7 @@ double TruncNormALPHA(int m,  arma::vec beta, double c1){
 
 
 
+//[[Rcpp::export]]
 arma::vec GetBoundariesBETA(int m, arma::vec beta){
   //
   arma::vec alpha=beta;
@@ -308,6 +287,7 @@ arma::vec GetBoundariesBETA(int m, arma::vec beta){
 
 }
 
+//[[Rcpp::export]]
 double TruncNormBETA( int m, arma::vec beta, double c1){
 
 
@@ -345,6 +325,7 @@ double TruncNormBETA( int m, arma::vec beta, double c1){
 
 
 //Clusters on a random group. TEST THIS
+//[[Rcpp::export]]
 int GetRandGroup(arma::vec INC){ //Vector containing stopped indicators)
 
 
@@ -397,6 +378,7 @@ int GetRandGroup(arma::vec INC){ //Vector containing stopped indicators)
 
 
 
+//[[Rcpp::export]]
 double LIKECOV(arma::vec Y,  //Vector of observed ordinal outcomes
                arma::vec T,  // Vector of observed treatment indicators, = 0,1 ,2, ..., nTreat
                arma::mat X, //MAtrix of covariates
@@ -417,7 +399,7 @@ double LIKECOV(arma::vec Y,  //Vector of observed ordinal outcomes
   int J = thetavec.n_cols;
 
 
-  arma::vec VAL = MATMULT(X,Beta);
+  arma::vec VAL = X*Beta;
 
 
   for(m=0;m<eta.n_rows;m++){
@@ -451,26 +433,28 @@ double LIKECOV(arma::vec Y,  //Vector of observed ordinal outcomes
 
 
 
-//' Performs posterior sampling for the MABOUST design.
+//' Obtains posterior samples from the MABOUST design for use in trial decision making.
+//' Performs posterior sampling for the MABOUST design and determines whether the trial should continue and what treatment(s) are optimal.
 //' @param Y Ordinal Outcome Vector, labeled 1,...,J
-//' @param T1 Treatment Indicator, labeled 1,...,K.
+//' @param T Treatment Indicator, labeled 1,...,K.
 //' @param X Matrix of patient covariates.
 //' @param NTreat Number of treatments in consideration, i.e. K.
 //' @param NOUT Number of ordinal outcome categories, i.e. J.
-//' @param PSPIKE Prior probability of a pairwise null effect.
 //' @param B Number of MCMC iterations to perform.
-//'@importFrom Rcpp evalCpp
-//'@useDynLib MABOUST
-//'@return List containing posterior distributions of \eqn{\bf{\theta}} and \eqn{\bf{\beta}}.
-//'@export
+//' @param PSPIKE Prior probability of a pairwise null. PSPIKE=1 means no clustering is possible.
+//' @param ADJ Integer for whether or not we should adjust for covariates.
+//' @return Posterior samples for use in the MABOUST design.
+//' @useDynLib MABOUST
+//' @export
 //[[Rcpp::export]]
 List MCMC_MABOUST( arma::vec Y,  //Vector of observed ordinal outcomes
-               arma::vec T1,  // Vector of observed treatment indicators
-               arma::mat X, //Matrix of covariates
-               double B, //Number of iterations for MCMC
-               double NTreat, //Number of treatments
-               double NOUT, //Number of outcomes
-               double PSPIKE
+              arma::vec T,  // Vector of observed treatment indicators
+              arma::mat X, //Matrix of covariates
+              double B, //Number of iterations for MCMC
+              double NTreat, //Number of treatments
+              double NOUT, //Number of outcomes
+              double PSPIKE, //If PSPIKE = 1, no clustering is possible.
+              int ADJ //Integer for whether or not we should adjust for covariates
 ){
 
 
@@ -596,100 +580,334 @@ List MCMC_MABOUST( arma::vec Y,  //Vector of observed ordinal outcomes
   int m2=0;
 
 
+  if(ADJ==1){
+    //Adjustments are being made
+    for(m=0;m<B;m++){
 
-  for(m=0;m<B;m++){
-
-    if(m<(B/2 + 2)){
-      if(m%100==0){
+      if(m<(B/2 + 2)){
+        if(m%100==0){
 
 
 
-        for(k=0;k<thetavec.n_rows;k++){
+          for(k=0;k<thetavec.n_rows;k++){
+            for(m1=0;m1<thetavec.n_cols;m1++){
+              if((ATheta(k,m1)/NTheta(k,m1))>.6){
+                varTheta(k,m1)=min1(varTheta(k,m1)+.05,2);
+              }
+              if((ATheta(k,m1)/NTheta(k,m1))<.25){
+                varTheta(k,m1)=min1(varTheta(k,m1)-.05,.05);
+              }
+
+
+            }
+          }
+
+
+
+          ATheta=ATheta.zeros()+1;
+          NTheta=NTheta.zeros()+2;
+
+
+          for(k=0;k<Beta.n_rows;k++){
+            if((ABeta[k]/NBeta[k])>.6){
+              VarBeta[k]=VarBeta[k]*2;
+            }
+
+            if((ABeta[k]/NBeta[k])<.25){
+              VarBeta[k]=VarBeta[k]/2;
+
+            }
+
+          }
+
+          ABeta=ABeta.zeros()+1;
+          NBeta=NBeta.zeros()+1;
+
+
+
+
+        }
+      }
+
+      for(k=0;k<thetavec.n_rows;k++){
+        //Treatment Effects
+        //Can't move Unless they are unclustered!!
+        if(SPIKEHOLD(k)==k){
+          //Is this currently unclustered?
           for(m1=0;m1<thetavec.n_cols;m1++){
-            if((ATheta(k,m1)/NTheta(k,m1))>.6){
-              varTheta(k,m1)=min1(varTheta(k,m1)+.05,2);
+            //Get our Alphas
+            thetavecprop=thetavec;
+            //   thetavecprop(k,m1)=TruncNormALPHA(m1, thetavecprop.row(0).t(), thetavecprop.row(k).t(), varTheta(k,m1));
+            thetavecprop(k,m1)=TruncNormALPHA(m1, thetavecprop.row(k).t(), varTheta(k,m1));
+
+            //Move anything clustered with this, MOVE IT!!!
+            for(j=0;j<SPIKEHOLD.n_rows;j++){
+              if(SPIKEHOLD(j)==k){
+                thetavecprop.row(j)=thetavecprop.row(k);
+              }
             }
-            if((ATheta(k,m1)/NTheta(k,m1))<.25){
-              varTheta(k,m1)=min1(varTheta(k,m1)-.05,.05);
+
+
+
+
+
+            // TruncNormBETA(m1,thetavecprop.row(k).t()+thetavecprop.row(0).t(),varTheta(k,m1))-thetavecprop(0,m1);
+            //Prior Ratio
+            //  alpha =   -.5*(gammadf+1)*log(1+pow((thetavecprop(k,m1)-0)/gammascale,2)/gammadf)+.5*(gammadf+1)*log(1+pow((thetavec(k,m1)-0)/gammascale,2)/gammadf);
+            //Generalized t distribution
+            alpha=0;
+            //Loglikelihood ratio
+            alpha=alpha+LIKECOV( Y,  T,X, thetavecprop,Beta)-LIKECOV( Y,  T, X, thetavec,Beta);
+
+
+
+            //Metropolis Hastings
+            U=log(as_scalar(arma::randu(1)));
+
+
+
+            if(U<alpha){
+              ATheta(k,m1)=ATheta(k,m1)+1;
+
+              thetavec=thetavecprop;
+
+
             }
+            NTheta(k,m1)=NTheta(k,m1)+1;
+
+
+
 
 
           }
         }
-
-
-
-        ATheta=ATheta.zeros()+1;
-        NTheta=NTheta.zeros()+2;
-
-
-        for(k=0;k<Beta.n_rows;k++){
-          if((ABeta[k]/NBeta[k])>.6){
-            VarBeta[k]=VarBeta[k]*2;
-          }
-
-          if((ABeta[k]/NBeta[k])<.25){
-            VarBeta[k]=VarBeta[k]/2;
-
-          }
-
-        }
-
-        ABeta=ABeta.zeros()+1;
-        NBeta=NBeta.zeros()+1;
 
 
 
 
       }
-    }
 
-    for(k=0;k<thetavec.n_rows;k++){
-      //Treatment Effects
-      //Can't move Unless they are unclustered!!
+
+
+      //Adjusting for all clustering indications
+      k=Sample1(thetavec.n_rows);
+
+
+      STORERAND(m)=k;
+      STOREHOLD(m)=SPIKEHOLD(k);
+
       if(SPIKEHOLD(k)==k){
-        //Is this currently unclustered?
-        for(m1=0;m1<thetavec.n_cols;m1++){
-          //Get our Alphas
-          thetavecprop=thetavec;
-          //   thetavecprop(k,m1)=TruncNormALPHA(m1, thetavecprop.row(0).t(), thetavecprop.row(k).t(), varTheta(k,m1));
-          thetavecprop(k,m1)=TruncNormALPHA(m1, thetavecprop.row(k).t(), varTheta(k,m1));
+        //Try SPIKING it at 0
 
-          //Move anything clustered with this, MOVE IT!!!
-          for(j=0;j<SPIKEHOLD.n_rows;j++){
-            if(SPIKEHOLD(j)==k){
-              thetavecprop.row(j)=thetavecprop.row(k);
+        thetavecprop=thetavec;
+        //Sample another random row to cluster it with
+        m1 = SampleSpike(SPIKEHOLD,k);
+
+        SPIKEHOLDPROP=SPIKEHOLD;
+        SPIKEHOLDPROP(k)=m1;
+
+        STORERAND1(m)=m1;
+
+
+
+        //Not clustered on treatment 0
+        for(j=0;j<thetavecprop.n_cols;j++){
+          thetavecprop(k,j)=thetavecprop(m1,j);
+        }
+
+
+
+
+
+
+        //Move everything with it...
+        //Move anything clustered with this previously...
+        for(j=0;j<SPIKEHOLD.n_rows;j++){
+          if(SPIKEHOLDPROP(j)==k){
+            SPIKEHOLDPROP(j)=m1;
+
+            for(m2=0;m2<thetavecprop.n_cols;m2++){
+              thetavecprop(j,m2)=thetavecprop(k,m2);
+            }
+          }
+        }
+
+
+
+
+        alpha=log(PSPIKE)-log(1-PSPIKE); //Prior for spike and slab
+        //Loglikelihood ratio
+        alpha=alpha+LIKECOV( Y,  T,X, thetavecprop,Beta)-LIKECOV( Y,  T, X, thetavec,Beta);
+
+        //Metropolis Hastings
+        U=log(as_scalar(arma::randu(1)));
+
+
+
+
+
+        if(U<alpha){
+          thetavec=thetavecprop;
+          SPIKEHOLD=SPIKEHOLDPROP;
+
+
+        }
+
+
+
+      }else{
+
+        STORERAND1(m)=-7;
+
+        //Propose unclustering a treatment vector
+        thetavecprop=thetavec;
+        //uncluster one entry of this vector
+        j=Sample1(thetavecprop.n_cols);
+        //Uncluster one value
+        thetavecprop(k,j)=TruncNormALPHA(j, thetavecprop.row(k).t(),  1);
+
+
+
+
+        //Nothing should be clustered on group k, so it doesn't need to move anything else.
+        //Group k is just clustered ON something else.
+
+
+
+        alpha=log(1-PSPIKE)-log(PSPIKE); //Prior for spike and slab
+        //Loglikelihood ratio
+        alpha=alpha+LIKECOV( Y,  T,X, thetavecprop,Beta)-LIKECOV( Y,  T, X, thetavec,Beta);
+
+
+
+        //Metropolis Hastings
+        U=log(as_scalar(arma::randu(1)));
+
+
+
+        if(U<alpha){
+          thetavec=thetavecprop;
+          SPIKEHOLD(k)=k;
+
+        }
+
+
+
+
+      }
+
+
+
+
+      ///Sample Beta
+      for(k=0;k<Beta.n_rows;k++){
+
+        Betaprop=Beta;
+        Betaprop(k)=-exp(as_scalar(arma::randn(1))*VarBeta(k)+log(-Beta(k)));
+
+
+        //  alpha =   -.5*(gammadf+1)*log(1+pow((Betaprop(k)-0)/gammascale,2)/gammadf)+.5*(gammadf+1)*log(1+pow((Beta(k)-0)/gammascale,2)/gammadf);
+        //Generalized t distribution
+        alpha=log(-Betaprop(k))-log(-Beta(k));
+        //Loglikelihood ratio
+        alpha=alpha+LIKECOV( Y,  T,X, thetavec,Betaprop)-LIKECOV( Y,  T, X, thetavec,Beta);
+
+
+
+        //Metropolis Hastings
+        U=log(as_scalar(arma::randu(1)));
+
+
+
+        if(U<alpha){
+          ABeta(k)=ABeta(k)+1;
+
+          Beta=Betaprop;
+
+        }
+        NBeta(k)=NBeta(k)+1;
+
+
+
+      }
+
+
+
+      //Storage
+
+      StoreInx=m;
+
+      thetavecprop=thetavec;
+
+
+      for(j=0;j<thetavec.n_rows;j++){
+        for(m1=0;m1<thetavec.n_cols;m1++){
+          ThetaStore(StoreInx,(thetavec.n_cols*j+m1))=thetavecprop(j,m1);
+        }
+      }
+
+
+      for(k=0;k<Beta.n_rows;k++){
+        BetaStore(StoreInx,k)=Beta(k);
+      }
+
+      for(k=0;k<SPIKEHOLD.n_rows;k++){
+        SPIKESTORE(StoreInx,k)=SPIKEHOLD(k);
+      }
+
+
+
+
+
+
+
+
+
+
+
+
+    }
+  }else{
+    for(m=0;m<B;m++){
+      Beta=Beta.zeros();
+      if(m<(B/2 + 2)){
+        if(m%100==0){
+
+
+
+          for(k=0;k<thetavec.n_rows;k++){
+            for(m1=0;m1<thetavec.n_cols;m1++){
+              if((ATheta(k,m1)/NTheta(k,m1))>.6){
+                varTheta(k,m1)=min1(varTheta(k,m1)+.05,2);
+              }
+              if((ATheta(k,m1)/NTheta(k,m1))<.25){
+                varTheta(k,m1)=min1(varTheta(k,m1)-.05,.05);
+              }
+
+
             }
           }
 
 
 
+          ATheta=ATheta.zeros()+1;
+          NTheta=NTheta.zeros()+2;
 
 
-          // TruncNormBETA(m1,thetavecprop.row(k).t()+thetavecprop.row(0).t(),varTheta(k,m1))-thetavecprop(0,m1);
-          //Prior Ratio
-          //  alpha =   -.5*(gammadf+1)*log(1+pow((thetavecprop(k,m1)-0)/gammascale,2)/gammadf)+.5*(gammadf+1)*log(1+pow((thetavec(k,m1)-0)/gammascale,2)/gammadf);
-          //Generalized t distribution
-          alpha=0;
-          //Loglikelihood ratio
-          alpha=alpha+LIKECOV( Y,  T1,X, thetavecprop,Beta)-LIKECOV( Y,  T1, X, thetavec,Beta);
+          for(k=0;k<Beta.n_rows;k++){
+            if((ABeta[k]/NBeta[k])>.6){
+              VarBeta[k]=VarBeta[k]*2;
+            }
 
+            if((ABeta[k]/NBeta[k])<.25){
+              VarBeta[k]=VarBeta[k]/2;
 
-
-          //Metropolis Hastings
-          U=log(as_scalar(arma::randu(1)));
-
-
-
-          if(U<alpha){
-            ATheta(k,m1)=ATheta(k,m1)+1;
-
-            thetavec=thetavecprop;
-
+            }
 
           }
-          NTheta(k,m1)=NTheta(k,m1)+1;
 
+          ABeta=ABeta.zeros()+1;
+          NBeta=NBeta.zeros()+1;
 
 
 
@@ -697,192 +915,213 @@ List MCMC_MABOUST( arma::vec Y,  //Vector of observed ordinal outcomes
         }
       }
 
+      for(k=0;k<thetavec.n_rows;k++){
+        //Treatment Effects
+        //Can't move Unless they are unclustered!!
+        if(SPIKEHOLD(k)==k){
+          //Is this currently unclustered?
+          for(m1=0;m1<thetavec.n_cols;m1++){
+            //Get our Alphas
+            thetavecprop=thetavec;
+            //   thetavecprop(k,m1)=TruncNormALPHA(m1, thetavecprop.row(0).t(), thetavecprop.row(k).t(), varTheta(k,m1));
+            thetavecprop(k,m1)=TruncNormALPHA(m1, thetavecprop.row(k).t(), varTheta(k,m1));
+
+            //Move anything clustered with this, MOVE IT!!!
+            for(j=0;j<SPIKEHOLD.n_rows;j++){
+              if(SPIKEHOLD(j)==k){
+                thetavecprop.row(j)=thetavecprop.row(k);
+              }
+            }
 
 
 
-    }
+
+
+            // TruncNormBETA(m1,thetavecprop.row(k).t()+thetavecprop.row(0).t(),varTheta(k,m1))-thetavecprop(0,m1);
+            //Prior Ratio
+            //  alpha =   -.5*(gammadf+1)*log(1+pow((thetavecprop(k,m1)-0)/gammascale,2)/gammadf)+.5*(gammadf+1)*log(1+pow((thetavec(k,m1)-0)/gammascale,2)/gammadf);
+            //Generalized t distribution
+            alpha=0;
+            //Loglikelihood ratio
+            alpha=alpha+LIKECOV( Y,  T,X, thetavecprop,Beta)-LIKECOV( Y,  T, X, thetavec,Beta);
 
 
 
-    //Adjusting for all clustering indications
-    k=Sample1(thetavec.n_rows);
-
-
-    STORERAND(m)=k;
-    STOREHOLD(m)=SPIKEHOLD(k);
-
-    if(SPIKEHOLD(k)==k){
-      //Try SPIKING it at 0
-
-      thetavecprop=thetavec;
-      //Sample another random row to cluster it with
-      m1 = SampleSpike(SPIKEHOLD,k);
-
-      SPIKEHOLDPROP=SPIKEHOLD;
-      SPIKEHOLDPROP(k)=m1;
-
-      STORERAND1(m)=m1;
+            //Metropolis Hastings
+            U=log(as_scalar(arma::randu(1)));
 
 
 
-      //Not clustered on treatment 0
-      for(j=0;j<thetavecprop.n_cols;j++){
-        thetavecprop(k,j)=thetavecprop(m1,j);
+            if(U<alpha){
+              ATheta(k,m1)=ATheta(k,m1)+1;
+
+              thetavec=thetavecprop;
+
+
+            }
+            NTheta(k,m1)=NTheta(k,m1)+1;
+
+
+
+
+
+          }
+        }
+
+
+
+
+      }
+
+
+
+      //Adjusting for all clustering indications
+      k=Sample1(thetavec.n_rows);
+
+
+      STORERAND(m)=k;
+      STOREHOLD(m)=SPIKEHOLD(k);
+
+      if(SPIKEHOLD(k)==k){
+        //Try SPIKING it at 0
+
+        thetavecprop=thetavec;
+        //Sample another random row to cluster it with
+        m1 = SampleSpike(SPIKEHOLD,k);
+
+        SPIKEHOLDPROP=SPIKEHOLD;
+        SPIKEHOLDPROP(k)=m1;
+
+        STORERAND1(m)=m1;
+
+
+
+        //Not clustered on treatment 0
+        for(j=0;j<thetavecprop.n_cols;j++){
+          thetavecprop(k,j)=thetavecprop(m1,j);
+        }
+
+
+
+
+
+
+        //Move everything with it...
+        //Move anything clustered with this previously...
+        for(j=0;j<SPIKEHOLD.n_rows;j++){
+          if(SPIKEHOLDPROP(j)==k){
+            SPIKEHOLDPROP(j)=m1;
+
+            for(m2=0;m2<thetavecprop.n_cols;m2++){
+              thetavecprop(j,m2)=thetavecprop(k,m2);
+            }
+          }
+        }
+
+
+
+
+        alpha=log(PSPIKE)-log(1-PSPIKE); //Prior for spike and slab
+        //Loglikelihood ratio
+        alpha=alpha+LIKECOV( Y,  T,X, thetavecprop,Beta)-LIKECOV( Y,  T, X, thetavec,Beta);
+
+        //Metropolis Hastings
+        U=log(as_scalar(arma::randu(1)));
+
+
+
+
+
+        if(U<alpha){
+          thetavec=thetavecprop;
+          SPIKEHOLD=SPIKEHOLDPROP;
+
+
+        }
+
+
+
+      }else{
+
+        STORERAND1(m)=-7;
+
+        //Propose unclustering a treatment vector
+        thetavecprop=thetavec;
+        //uncluster one entry of this vector
+        j=Sample1(thetavecprop.n_cols);
+        //Uncluster one value
+        thetavecprop(k,j)=TruncNormALPHA(j, thetavecprop.row(k).t(),  1);
+
+
+
+
+        //Nothing should be clustered on group k, so it doesn't need to move anything else.
+        //Group k is just clustered ON something else.
+
+
+
+        alpha=log(1-PSPIKE)-log(PSPIKE); //Prior for spike and slab
+        //Loglikelihood ratio
+        alpha=alpha+LIKECOV( Y,  T,X, thetavecprop,Beta)-LIKECOV( Y,  T, X, thetavec,Beta);
+
+
+
+        //Metropolis Hastings
+        U=log(as_scalar(arma::randu(1)));
+
+
+
+        if(U<alpha){
+          thetavec=thetavecprop;
+          SPIKEHOLD(k)=k;
+
+        }
+
+
+
+
       }
 
 
 
 
 
+      //Storage
 
-      //Move everything with it...
-      //Move anything clustered with this previously...
-      for(j=0;j<SPIKEHOLD.n_rows;j++){
-        if(SPIKEHOLDPROP(j)==k){
-          SPIKEHOLDPROP(j)=m1;
+      StoreInx=m;
 
-          for(m2=0;m2<thetavecprop.n_cols;m2++){
-            thetavecprop(j,m2)=thetavecprop(k,m2);
-          }
+      thetavecprop=thetavec;
+
+
+      for(j=0;j<thetavec.n_rows;j++){
+        for(m1=0;m1<thetavec.n_cols;m1++){
+          ThetaStore(StoreInx,(thetavec.n_cols*j+m1))=thetavecprop(j,m1);
         }
       }
 
 
-
-
-      alpha=log(PSPIKE)-log(1-PSPIKE); //Prior for spike and slab
-      //Loglikelihood ratio
-      alpha=alpha+LIKECOV( Y,  T1,X, thetavecprop,Beta)-LIKECOV( Y,  T1, X, thetavec,Beta);
-
-      //Metropolis Hastings
-      U=log(as_scalar(arma::randu(1)));
-
-
-
-
-
-      if(U<alpha){
-        thetavec=thetavecprop;
-        SPIKEHOLD=SPIKEHOLDPROP;
-
-
+      for(k=0;k<Beta.n_rows;k++){
+        BetaStore(StoreInx,k)=Beta(k);
       }
 
-
-
-    }else{
-
-      STORERAND1(m)=-7;
-
-      //Propose unclustering a treatment vector
-      thetavecprop=thetavec;
-      //uncluster one entry of this vector
-      j=Sample1(thetavecprop.n_cols);
-      //Uncluster one value
-      thetavecprop(k,j)=TruncNormALPHA(j, thetavecprop.row(k).t(),  1);
-
-
-
-
-      //Nothing should be clustered on group k, so it doesn't need to move anything else.
-      //Group k is just clustered ON something else.
-
-
-
-      alpha=log(1-PSPIKE)-log(PSPIKE); //Prior for spike and slab
-      //Loglikelihood ratio
-      alpha=alpha+LIKECOV( Y,  T1,X, thetavecprop,Beta)-LIKECOV( Y,  T1, X, thetavec,Beta);
-
-
-
-      //Metropolis Hastings
-      U=log(as_scalar(arma::randu(1)));
-
-
-
-      if(U<alpha){
-        thetavec=thetavecprop;
-        SPIKEHOLD(k)=k;
-
+      for(k=0;k<SPIKEHOLD.n_rows;k++){
+        SPIKESTORE(StoreInx,k)=SPIKEHOLD(k);
       }
 
 
 
 
-    }
 
 
 
 
-    ///Sample Beta
-    for(k=0;k<Beta.n_rows;k++){
 
-      Betaprop=Beta;
-      Betaprop(k)=-exp(as_scalar(arma::randn(1))*VarBeta(k)+log(-Beta(k)));
-
-
-      //  alpha =   -.5*(gammadf+1)*log(1+pow((Betaprop(k)-0)/gammascale,2)/gammadf)+.5*(gammadf+1)*log(1+pow((Beta(k)-0)/gammascale,2)/gammadf);
-      //Generalized t distribution
-      alpha=log(-Betaprop(k))-log(-Beta(k));
-      //Loglikelihood ratio
-      alpha=alpha+LIKECOV( Y,  T1,X, thetavec,Betaprop)-LIKECOV( Y,  T1, X, thetavec,Beta);
-
-
-
-      //Metropolis Hastings
-      U=log(as_scalar(arma::randu(1)));
-
-
-
-      if(U<alpha){
-        ABeta(k)=ABeta(k)+1;
-
-        Beta=Betaprop;
-
-      }
-      NBeta(k)=NBeta(k)+1;
 
 
 
     }
-
-
-
-    //Storage
-
-    StoreInx=m;
-
-    thetavecprop=thetavec;
-
-
-    for(j=0;j<thetavec.n_rows;j++){
-      for(m1=0;m1<thetavec.n_cols;m1++){
-        ThetaStore(StoreInx,(thetavec.n_cols*j+m1))=thetavecprop(j,m1);
-      }
-    }
-
-
-    for(k=0;k<Beta.n_rows;k++){
-      BetaStore(StoreInx,k)=Beta(k);
-    }
-
-    for(k=0;k<SPIKEHOLD.n_rows;k++){
-      SPIKESTORE(StoreInx,k)=SPIKEHOLD(k);
-    }
-
-
-
-
-
-
-
-
-
-
-
 
   }
-
 
 
 
@@ -912,6 +1151,8 @@ List MCMC_MABOUST( arma::vec Y,  //Vector of observed ordinal outcomes
   return(z1);
 
 }
+
+
 
 
 

@@ -2,14 +2,15 @@
 % Please edit documentation in R/RcppExports.R
 \name{MCMC_MABOUST}
 \alias{MCMC_MABOUST}
-\title{Performs posterior sampling for the MABOUST design.}
+\title{Obtains posterior samples from the MABOUST design for use in trial decision making.
+Performs posterior sampling for the MABOUST design and determines whether the trial should continue and what treatment(s) are optimal.}
 \usage{
-MCMC_MABOUST(Y, T1, X, B, NTreat, NOUT, PSPIKE)
+MCMC_MABOUST(Y, T, X, B, NTreat, NOUT, PSPIKE, ADJ)
 }
 \arguments{
 \item{Y}{Ordinal Outcome Vector, labeled 1,...,J}
 
-\item{T1}{Treatment Indicator, labeled 1,...,K.}
+\item{T}{Treatment Indicator, labeled 1,...,K.}
 
 \item{X}{Matrix of patient covariates.}
 
@@ -19,11 +20,14 @@ MCMC_MABOUST(Y, T1, X, B, NTreat, NOUT, PSPIKE)
 
 \item{NOUT}{Number of ordinal outcome categories, i.e. J.}
 
-\item{PSPIKE}{Prior probability of a pairwise null effect.}
+\item{PSPIKE}{Prior probability of a pairwise null. PSPIKE=1 means no clustering is possible.}
+
+\item{ADJ}{Integer for whether or not we should adjust for covariates.}
 }
 \value{
-List containing posterior distributions of \eqn{\bf{\theta}} and \eqn{\bf{\beta}}.
+Posterior samples for use in the MABOUST design.
 }
 \description{
-Performs posterior sampling for the MABOUST design.
+Obtains posterior samples from the MABOUST design for use in trial decision making.
+Performs posterior sampling for the MABOUST design and determines whether the trial should continue and what treatment(s) are optimal.
 }

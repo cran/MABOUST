@@ -11,9 +11,11 @@
 #' @param UT Vector of numerical utility scores to give outcomes 1,...,J.
 #' @param DeltaVEC Vector of \eqn{\Delta} values to test.
 #' @param gamma Length 3 vector of cutoff parameters.
-#' @param PSPIKE Prior probability of a pairwise null effect.
 #' @param B Number of MCMC iterations to perform.
+#' @param PSPIKE Prior probability of a pairwise null. PSPIKE=1 means no clustering is possible.
+#' @param ADJ Integer for whether or not we should adjust for covariates.
 #' @importFrom graphics boxplot
+#' @importFrom Rcpp evalCpp
 #' @return The set of active treatments to continue, an optimal treatment, or a set of equally optimal treatments. Also reports posterior mean utilities and ordinal outcome probabilities as well as pairwise comparisons of utility similarity, when appropriate.
 #' @references
 #' [1] Chapple and Clement (2020), MABOUST: A Multi-Armed Bayesian Ordinal Outcome Utility-Based Sequential Trial. Submitted.
@@ -37,7 +39,9 @@
 #' X=matrix(rnorm(n*2),ncol=2)
 #' ###Number of iterations
 #' B=100
-#' MABOUST(Y, T1, X, ACTIVE, FUTILITY, nTreat, nCat, UT, DeltaVEC, gamma, PSPIKE,B )
+#' PSPIKE = .9
+#' ADJ = 1
+#' MABOUST(Y, T1, X, ACTIVE, FUTILITY, nTreat, nCat, UT, DeltaVEC, gamma, PSPIKE, ADJ,B )
 #' @export
 MABOUST=function(Y, ##Ordinal Outcome Vector, labeled 1,...,J
                  T1, ##Treatment Indicator, labeled 1,...,K.
@@ -50,6 +54,7 @@ MABOUST=function(Y, ##Ordinal Outcome Vector, labeled 1,...,J
                  DeltaVEC, ##Vector of \Delta values to test.
                  gamma, ##Vector of cutoff parameters.
                  PSPIKE, ###Prior probability of a pairwise null effect.
+                 ADJ,
                  B ##Number of MCMC iterations to perform
 ){
 
@@ -69,7 +74,7 @@ MABOUST=function(Y, ##Ordinal Outcome Vector, labeled 1,...,J
                          B,
                          nTreat,
                          nCat,
-                         PSPIKE) ##Number of iterations for the MCMC
+                         PSPIKE,ADJ) ##Number of iterations for the MCMC
 
 
 

@@ -6,26 +6,135 @@
 
 using namespace Rcpp;
 
-// MCMC_MABOUST
-List MCMC_MABOUST(arma::vec Y, arma::vec T1, arma::mat X, double B, double NTreat, double NOUT, double PSPIKE);
-RcppExport SEXP _MABOUST_MCMC_MABOUST(SEXP YSEXP, SEXP T1SEXP, SEXP XSEXP, SEXP BSEXP, SEXP NTreatSEXP, SEXP NOUTSEXP, SEXP PSPIKESEXP) {
+// IsAdmissable
+int IsAdmissable(arma::mat gamma1, arma::mat gamma2);
+RcppExport SEXP _MABOUST_IsAdmissable(SEXP gamma1SEXP, SEXP gamma2SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type gamma1(gamma1SEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type gamma2(gamma2SEXP);
+    rcpp_result_gen = Rcpp::wrap(IsAdmissable(gamma1, gamma2));
+    return rcpp_result_gen;
+END_RCPP
+}
+// SampleSpike
+int SampleSpike(arma::vec SPIKEHOLD, int k);
+RcppExport SEXP _MABOUST_SampleSpike(SEXP SPIKEHOLDSEXP, SEXP kSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::vec >::type SPIKEHOLD(SPIKEHOLDSEXP);
+    Rcpp::traits::input_parameter< int >::type k(kSEXP);
+    rcpp_result_gen = Rcpp::wrap(SampleSpike(SPIKEHOLD, k));
+    return rcpp_result_gen;
+END_RCPP
+}
+// GetBoundariesALPHA
+arma::vec GetBoundariesALPHA(int m, arma::vec beta);
+RcppExport SEXP _MABOUST_GetBoundariesALPHA(SEXP mSEXP, SEXP betaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type m(mSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type beta(betaSEXP);
+    rcpp_result_gen = Rcpp::wrap(GetBoundariesALPHA(m, beta));
+    return rcpp_result_gen;
+END_RCPP
+}
+// TruncNormALPHA
+double TruncNormALPHA(int m, arma::vec beta, double c1);
+RcppExport SEXP _MABOUST_TruncNormALPHA(SEXP mSEXP, SEXP betaSEXP, SEXP c1SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type m(mSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type beta(betaSEXP);
+    Rcpp::traits::input_parameter< double >::type c1(c1SEXP);
+    rcpp_result_gen = Rcpp::wrap(TruncNormALPHA(m, beta, c1));
+    return rcpp_result_gen;
+END_RCPP
+}
+// GetBoundariesBETA
+arma::vec GetBoundariesBETA(int m, arma::vec beta);
+RcppExport SEXP _MABOUST_GetBoundariesBETA(SEXP mSEXP, SEXP betaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type m(mSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type beta(betaSEXP);
+    rcpp_result_gen = Rcpp::wrap(GetBoundariesBETA(m, beta));
+    return rcpp_result_gen;
+END_RCPP
+}
+// TruncNormBETA
+double TruncNormBETA(int m, arma::vec beta, double c1);
+RcppExport SEXP _MABOUST_TruncNormBETA(SEXP mSEXP, SEXP betaSEXP, SEXP c1SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type m(mSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type beta(betaSEXP);
+    Rcpp::traits::input_parameter< double >::type c1(c1SEXP);
+    rcpp_result_gen = Rcpp::wrap(TruncNormBETA(m, beta, c1));
+    return rcpp_result_gen;
+END_RCPP
+}
+// GetRandGroup
+int GetRandGroup(arma::vec INC);
+RcppExport SEXP _MABOUST_GetRandGroup(SEXP INCSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::vec >::type INC(INCSEXP);
+    rcpp_result_gen = Rcpp::wrap(GetRandGroup(INC));
+    return rcpp_result_gen;
+END_RCPP
+}
+// LIKECOV
+double LIKECOV(arma::vec Y, arma::vec T, arma::mat X, arma::mat thetavec, arma::vec Beta);
+RcppExport SEXP _MABOUST_LIKECOV(SEXP YSEXP, SEXP TSEXP, SEXP XSEXP, SEXP thetavecSEXP, SEXP BetaSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::vec >::type Y(YSEXP);
-    Rcpp::traits::input_parameter< arma::vec >::type T1(T1SEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type T(TSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type thetavec(thetavecSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type Beta(BetaSEXP);
+    rcpp_result_gen = Rcpp::wrap(LIKECOV(Y, T, X, thetavec, Beta));
+    return rcpp_result_gen;
+END_RCPP
+}
+// MCMC_MABOUST
+List MCMC_MABOUST(arma::vec Y, arma::vec T, arma::mat X, double B, double NTreat, double NOUT, double PSPIKE, int ADJ);
+RcppExport SEXP _MABOUST_MCMC_MABOUST(SEXP YSEXP, SEXP TSEXP, SEXP XSEXP, SEXP BSEXP, SEXP NTreatSEXP, SEXP NOUTSEXP, SEXP PSPIKESEXP, SEXP ADJSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::vec >::type Y(YSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type T(TSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
     Rcpp::traits::input_parameter< double >::type B(BSEXP);
     Rcpp::traits::input_parameter< double >::type NTreat(NTreatSEXP);
     Rcpp::traits::input_parameter< double >::type NOUT(NOUTSEXP);
     Rcpp::traits::input_parameter< double >::type PSPIKE(PSPIKESEXP);
-    rcpp_result_gen = Rcpp::wrap(MCMC_MABOUST(Y, T1, X, B, NTreat, NOUT, PSPIKE));
+    Rcpp::traits::input_parameter< int >::type ADJ(ADJSEXP);
+    rcpp_result_gen = Rcpp::wrap(MCMC_MABOUST(Y, T, X, B, NTreat, NOUT, PSPIKE, ADJ));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_MABOUST_MCMC_MABOUST", (DL_FUNC) &_MABOUST_MCMC_MABOUST, 7},
+    {"_MABOUST_IsAdmissable", (DL_FUNC) &_MABOUST_IsAdmissable, 2},
+    {"_MABOUST_SampleSpike", (DL_FUNC) &_MABOUST_SampleSpike, 2},
+    {"_MABOUST_GetBoundariesALPHA", (DL_FUNC) &_MABOUST_GetBoundariesALPHA, 2},
+    {"_MABOUST_TruncNormALPHA", (DL_FUNC) &_MABOUST_TruncNormALPHA, 3},
+    {"_MABOUST_GetBoundariesBETA", (DL_FUNC) &_MABOUST_GetBoundariesBETA, 2},
+    {"_MABOUST_TruncNormBETA", (DL_FUNC) &_MABOUST_TruncNormBETA, 3},
+    {"_MABOUST_GetRandGroup", (DL_FUNC) &_MABOUST_GetRandGroup, 1},
+    {"_MABOUST_LIKECOV", (DL_FUNC) &_MABOUST_LIKECOV, 5},
+    {"_MABOUST_MCMC_MABOUST", (DL_FUNC) &_MABOUST_MCMC_MABOUST, 8},
     {NULL, NULL, 0}
 };
 

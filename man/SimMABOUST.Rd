@@ -13,6 +13,7 @@ SimMABOUST(
   DeltaVEC,
   gamma,
   PSPIKE,
+  ADJ,
   B,
   PROBS,
   Beta,
@@ -35,6 +36,8 @@ SimMABOUST(
 \item{gamma}{Length 3 vector of cutoff parameters.}
 
 \item{PSPIKE}{Prior probability of a pairwise null effect.}
+
+\item{ADJ}{Binary indicator of whether covariate adjustment is used.}
 
 \item{B}{Number of MCMC iterations to perform.}
 
@@ -83,7 +86,8 @@ B=100
  PROBS[[3]]=c(.14, .20, .48, .03, .12, .03)
  Beta=c(-.13, -.07, -.10)
  nSims=1 ##Number of sims to run
- SimMABOUST(nSims,NLOOK, nTreat,nCat, UT, DeltaVEC,gamma,PSPIKE, B, PROBS, Beta, XPROB)
+ ADJ=1
+ SimMABOUST(nSims,NLOOK, nTreat,nCat, UT, DeltaVEC,gamma,PSPIKE,ADJ, B, PROBS, Beta, XPROB)
 }
 \references{
 Chapple, A.G., Bennani, Y., Clement, M. (2020). "MABOUST: A Multi-Armed Bayesian Ordinal Outcome Utility-Based Sequential Trial". Submitted.

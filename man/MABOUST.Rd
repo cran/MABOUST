@@ -16,6 +16,7 @@ MABOUST(
   DeltaVEC,
   gamma,
   PSPIKE,
+  ADJ,
   B
 )
 }
@@ -40,7 +41,9 @@ MABOUST(
 
 \item{gamma}{Length 3 vector of cutoff parameters.}
 
-\item{PSPIKE}{Prior probability of a pairwise null effect.}
+\item{PSPIKE}{Prior probability of a pairwise null. PSPIKE=1 means no clustering is possible.}
+
+\item{ADJ}{Integer for whether or not we should adjust for covariates.}
 
 \item{B}{Number of MCMC iterations to perform.}
 }
@@ -70,7 +73,9 @@ T1 = sample(1:nTreat,n,replace=TRUE)
 X=matrix(rnorm(n*2),ncol=2)
 ###Number of iterations
 B=100
-MABOUST(Y, T1, X, ACTIVE, FUTILITY, nTreat, nCat, UT, DeltaVEC, gamma, PSPIKE,B )
+PSPIKE = .9
+ADJ = 1
+MABOUST(Y, T1, X, ACTIVE, FUTILITY, nTreat, nCat, UT, DeltaVEC, gamma, PSPIKE, ADJ,B )
 }
 \references{
 [1] Chapple and Clement (2020), MABOUST: A Multi-Armed Bayesian Ordinal Outcome Utility-Based Sequential Trial. Submitted.
